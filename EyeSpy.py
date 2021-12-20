@@ -5,11 +5,17 @@ import time
 import csv
 import subprocess
 import sys
+import os
+import hashlib
 
 def run_urlcrazy(domain, outdir):
+    if not os.path.isdir(outdir):
+        os.makedirs(outdir)
+    
     out_file = open("{0}/Domain-Variations.csv".format(outdir), "w")
     subprocess.call(["urlcrazy", str(domain), "--format=CSV"], stdout=out_file)
     out_file.close()
+    print("[~] URLCrazy finished")
 
 def check_row_return_domain(row):
     if row[5] != "":
@@ -18,9 +24,7 @@ def check_row_return_domain(row):
         return None
 
 def main(outdir):
-    # outdir = "Results"
-
-    file = open("Results/Domain-Variations.csv", 'r')
+    file = open("{0}/Domain-Variations.csv".format(outdir), 'r')
     csv_reader = csv.reader(file)
     
     # get to actual data row
@@ -42,20 +46,39 @@ def main(outdir):
     results_file = open("{0}/results.html".format(outdir), 'a')
     results_file.writelines(html_header())
 
-    for name in domain_names:
-        try:
-            results_file.writelines("<div style=\"text-align:center;border:1px solid black;\"><h3>{0}: {1}</h3></br>\n".format(name[0], name[1]))
+    
+    try:
+        for name in domain_names:
+            print("[~] Attempting to screenshot: "+ name[1])
             browser.get('http://{0}'.format(name[1]))
-            browser.save_screenshot("{0}/{1}.png".format(outdir, name[1]))
-            results_file.writelines("<img alt=\"unable to screenshot\" src=\"{0}\"></img></div></br>\n".format(str(name[1])+".png"))
-        except WebDriverException as wde:
-            print("[-] Unable to screenshot {0}".format(name[1]))
+            # time.sleep(5)
+            current_path = "{0}/{1}.png".format(outdir, name[1])
+            browser.save_screenshot(current_path)
+            # check for blanks page - md5sum 986acbd0af09d08f821f62a9b6a67299
+            is_blank = check_for_blank(current_path)
+            if is_blank:
+                continue
+            else:
+                results_file.writelines("<div style=\"text-align:center;border:1px solid black;\"><h3>{0}: {1}</h3></br>\n".format(name[0], name[1]))
+                results_file.writelines("<img alt=\"unable to screenshot\" src=\"{0}\"></img></div></br>\n".format(str(name[1])+".png"))  
+    except WebDriverException as wde:
+        print("[-] Unable to screenshot {0}".format(name[1]))
 
     results_file.writelines(html_footer())
     results_file.close()
 
     browser.close()
     
+def check_for_blank(path):
+    blank_hash = "fa4316bd5905c0420c371b375e7df6ff"
+    current = hashlib.md5(open(path, "rb").read()).hexdigest()
+    print(current)
+    if current == blank_hash:
+        print("[-] Blank Screenshot, deleting.")
+        os.remove(path)
+        return True
+    else:
+        return False
 
 def html_header():
     temp = """<!DOCTYPE html>
