@@ -19,7 +19,7 @@ def run_urlcrazy(domain, outdir):
 
 def check_row_return_domain(row):
     if row[5] != "":
-        return [row[0], row[1]]
+        return [row[0], row[1], row[4]]
     else:
         return None
 
@@ -59,7 +59,7 @@ def main(outdir):
             if is_blank:
                 continue
             else:
-                results_file.writelines("<div style=\"text-align:center;border:1px solid black;\"><h3>{0}: {1}</h3></br>\n".format(name[0], name[1]))
+                results_file.writelines("<div style=\"text-align:center;border:1px solid black;\"><h3>{0} : {1} : {2}</h3></br>\n".format(name[0], name[1], name[2]))
                 results_file.writelines("<img alt=\"unable to screenshot\" src=\"{0}\"></img></div></br>\n".format(str(name[1])+".png"))  
     except WebDriverException as wde:
         print("[-] Unable to screenshot {0}".format(name[1]))
